@@ -8,21 +8,18 @@ import Navbar from './components/Navbar';
 function AppContent() {
   const [showSplash, setShowSplash] = useState(false);
   const location = useLocation();
+  const DEV_SHOW_SPLASH = false; // toggle splash screen during development
 
   useEffect(() => {
-    const isDirectLoad = document.referrer === '' || document.referrer === window.location.origin;
+    if (!DEV_SHOW_SPLASH) return;
+    if (location.pathname !== '/') return;
+    const navEntries = performance.getEntriesByType('navigation');
+    const navType = navEntries[0]?.type;
 
-    if (isDirectLoad && location.pathname === '/') {
-      sessionStorage.removeItem('hasSeenSplash');
-    }
-
-    const hasSeenSplash = sessionStorage.getItem('hasSeenSplash');
-
-    if (location.pathname === '/' && (!hasSeenSplash || isDirectLoad)) {
+    if (navType === 'reload' || (navType === 'navigate' && document.referrer === '')) {
       setShowSplash(true);
-      sessionStorage.setItem('hasSeenSplash', 'true');
     }
-  }, [location]);
+  }, []);
 
   const handleSplashComplete = () => {
     setShowSplash(false);
@@ -32,7 +29,7 @@ function AppContent() {
     <div className="min-h-screen bg-[]">
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
 
-      <div className={`transition-opacity duration-500 ${showSplash ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={``}>
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
