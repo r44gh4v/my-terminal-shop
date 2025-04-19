@@ -36,30 +36,29 @@ const SplashScreen = ({ onComplete }) => {
   return (
     <div
       className={
-        `absolute bg-[#190900] h-svh m-0 w-full z-50 font-mono transition-opacity duration-500 ${isClosing ? 'opacity-0' : 'opacity-100'}`
+        `flex absolute bg-[#190900] h-svh m-0 w-full z-50 font-mono transition-opacity duration-500 ${isClosing ? 'opacity-0' : 'opacity-100'}`
       }
     >
 
-      
-        <img
-          src="https://i.postimg.cc/tJhBVh4d/scanlines.png"
-          alt='scanlines'
-          className='opacity-90 absolute w-[100%] h-svh top-0 left-0 pointer-events-none'
-        />
-        <img
-          src="https://i.postimg.cc/SR8v7BDM/bezel.png"
-          alt='bezel'
-          className='absolute w-[100%] h-svh top-0 left-0 pointer-events-none'
-        />
+      <img
+        src="https://i.postimg.cc/tJhBVh4d/scanlines.png"
+        alt='scanlines'
+        className='opacity-90 absolute w-[100%] h-svh top-0 left-0 pointer-events-none'
+      />
+      <img
+        src="https://i.postimg.cc/SR8v7BDM/bezel.png"
+        alt='bezel'
+        className='absolute w-[100%] h-svh top-0 left-0 pointer-events-none'
+      />
 
-        <div className='pl-25 pt-20 text-[#FF5C00] text-2xl text-shadow-lg/70 text-shadow-[#FF5C00]'>
-          <div className='text-xl'>*************************</div>
-          <div className='text-7xl'>WELCOME</div>
-          <div className='text-xl'>*************************</div>
-          <br />
-          <div>$ {text}|</div>
-        </div>
-      
+      <div className='w-[80%] text-[#FF5C00] text-2xl text-shadow-lg/70 text-shadow-[#FF5C00]'>
+        <div className='text-xl'>*************************</div>
+        <div className='text-7xl'>WELCOME</div>
+        <div className='text-xl'>*************************</div>
+        <br />
+        <div>$ {text}|</div>
+      </div>
+
 
     </div>
   );

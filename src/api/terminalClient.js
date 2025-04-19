@@ -2,18 +2,7 @@
 const BASE_URL = import.meta.env.VITE_TERMINAL_BASE_URL;
 const TOKEN = import.meta.env.VITE_TERMINAL_BEARER_TOKEN;
 
-// Debug: ensure env vars are loaded
-console.debug('terminalClient initialized with', { BASE_URL, TOKEN });
-if (!TOKEN) {
-  throw new Error('No VITE_TERMINAL_BEARER_TOKEN provided. Check your .env and restart dev server.');
-}
-
 async function request(path, options = {}) {
-  console.debug(`[TerminalClient] Sending request`, {
-    url: `${BASE_URL}${path}`,
-    method: options.method || 'GET',
-    token: TOKEN ? `${TOKEN.slice(0, 8)}...` : 'none',
-  });
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: {
       'Content-Type': 'application/json',
@@ -39,4 +28,10 @@ export const terminalClient = {
     request('/cart/item', { method: 'PUT', body: JSON.stringify({ productVariantID, quantity }) }),
   clearCart: () => request('/cart', { method: 'DELETE' }),
   convertCart: () => request('/cart/convert', { method: 'POST' }),
+  // create a new subscription for a variant
+  createSubscription: (variantId, quantity = 1) =>
+    request('/subscription', {
+      method: 'POST',
+      body: JSON.stringify({ variants: { [variantId]: quantity } }),
+    }),
 };
