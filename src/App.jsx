@@ -38,7 +38,7 @@ function AppContent() {
             <img
               src="https://i.postimg.cc/tJhBVh4d/scanlines.png"
               alt="scanlines"
-              className="fixed top-0 left-0 w-full h-full object-cover opacity-40 z-40 pointer-events-none"
+              className=" opacity-60 fixed top-0 left-0 w-full h-full object-cover z-40 pointer-events-none"
             />
             <div className="m-5">
               <Navbar />

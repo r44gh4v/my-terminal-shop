@@ -34,4 +34,21 @@ export const terminalClient = {
       method: 'POST',
       body: JSON.stringify({ variants: { [variantId]: quantity } }),
     }),
+  // composite initialization endpoint
+  viewInit: () => request('/view/init'),
+  // user profile
+  getProfile: () => request('/profile'),
+  updateProfile: (data) => request('/profile', { method: 'PUT', body: JSON.stringify(data) }),
+  // addresses
+  listAddresses: () => request('/address'),
+  getAddress: (id) => request(`/address/${id}`),
+  createAddress: (address) => request('/address', { method: 'POST', body: JSON.stringify(address) }),
+  deleteAddress: (addressId) => request(`/address/${addressId}`, { method: 'DELETE' }),
+  // set cart shipping address
+  setCartAddress: (addressId) => request('/cart/address', { method: 'PUT', body: JSON.stringify({ addressID: addressId }) }),
+  // set cart payment card
+  setCartCard: (cardId) => request('/cart/setCard', { method: 'PUT', body: JSON.stringify({ cardID: cardId }) }),
+  // orders
+  listOrders: () => request('/order'),
+  getOrder: (id) => request(`/order/${id}`),
 };

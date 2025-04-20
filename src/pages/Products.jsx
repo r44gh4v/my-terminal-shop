@@ -18,18 +18,19 @@ function Products() {
     () => products.filter(p => !p.tags?.featured && p.subscription !== 'required'),
     [products]
   );
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className='text-5xl animate-pulse '>Loading...</div>;
   if (error) return <div>{error}</div>;
 
   return (
-    <div className=" space-y-8">
+    <div className=" space-y-4">
 
       {featured.length > 0 && (
         <section>
-          <h1 className="text-3xl font-bold mb-4 text-[#FF5C00] text-shadow-[0_0_8px_#FF5C00]">
+          <h1 className="bg-[#ff5e0017] p-2 px-3  text-4xl font-bold mb-4 text-[#FF5C00] text-shadow-[0_0_5px_#FF5C00]">
             ~ featured ~
           </h1>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {featured.map(product => {
               const vid = product.variants[0].id;
               const qty = localCart[vid] || 0;
@@ -44,15 +45,16 @@ function Products() {
               );
             })}
           </div>
+
         </section>
       )}
 
       {originals.length > 0 && (
         <section>
-          <h2 className="text-2xl font-bold mb-4 text-[#FF5C00] text-shadow-[0_0_8px_#FF5C00]">
+          <h1 className="bg-[#ff5e0017] p-2 px-3 text-4xl font-bold mb-4 text-[#FF5C00] text-shadow-[0_0_5px_#FF5C00]">
             ~ originals ~
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          </h1>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {originals.map(product => {
               const vid = product.variants[0].id;
               const qty = localCart[vid] || 0;

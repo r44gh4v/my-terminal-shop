@@ -51,12 +51,19 @@ const SplashScreen = ({ onComplete }) => {
         className='absolute w-[100%] h-svh top-0 left-0 pointer-events-none'
       />
 
-      <div className='w-[80%] text-[#FF5C00] text-2xl text-shadow-lg/70 text-shadow-[#FF5C00]'>
-        <div className='text-xl'>*************************</div>
-        <div className='text-7xl'>WELCOME</div>
-        <div className='text-xl'>*************************</div>
-        <br />
-        <div>$ {text}|</div>
+      <div className='w-[80%] ml-auto mr-auto  mt-12 text-[#FF5C00] text-2xl text-shadow-lg/70 text-shadow-[#FF5C00]'>
+
+        <div className='flex flex-col items-center mb-8'>
+          <div className='text-xl'>*************************</div>
+          <div className='text-7xl'>WELCOME</div>
+          <div className='text-xl'>*************************</div>
+        </div>
+
+        <div className='flex'>
+          <div>$ {text}</div>
+          <div className='animate-pulse'>|</div>
+        </div>
+
       </div>
 
 
