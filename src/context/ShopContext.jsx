@@ -2,24 +2,36 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { terminalClient } from '../api/terminalClient';
 
 const ShopContext = createContext();
+const USER_TOKEN_KEY = 'terminalShopUserToken';
 
 export function ShopProvider({ children }) {
   const [products, setProducts] = useState([]);
-  const [profile, setProfile] = useState(null);
   const [serverCart, setServerCart] = useState({ items: [] });
   const [localCart, setLocalCart] = useState({});
   const [addresses, setAddresses] = useState([]);
   const [cards, setCards] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // no manual import needed; silent PAT generation for new users
 
   // Fetch initial data on mount
   useEffect(() => {
-    terminalClient.viewInit()
-      .then(res => {
+    async function init() {
+      try {
+        // silent PAT generation for new users
+        const stored = localStorage.getItem(USER_TOKEN_KEY);
+        if (!stored) {
+          const createRes = await terminalClient.createToken(`auto-${Date.now()}`);
+          const newToken = createRes.data || createRes;
+          const secret = newToken.token || newToken.value;
+          if (secret) localStorage.setItem(USER_TOKEN_KEY, secret);
+        }
+        // fetch initial app data now that PAT exists
+        const res = await terminalClient.viewInit();
         const data = res.data || res;
-        setProfile(data.user);
         setProducts(data.products);
         setServerCart(data.cart);
         const initCart = {};
@@ -30,9 +42,18 @@ export function ShopProvider({ children }) {
         setAddresses(data.addresses || []);
         setCards(data.cards || []);
         setOrders(data.orders || []);
-      })
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
+        setSubscriptions(data.subscriptions || []);
+        // fetch tokens for management
+        const tk = await terminalClient.listTokens();
+        const tokenList = Array.isArray(tk.data) ? tk.data : Array.isArray(tk) ? tk : [];
+        setTokens(tokenList);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    init();
   }, []);
 
   // Update localCart quantity only
@@ -81,7 +102,6 @@ export function ShopProvider({ children }) {
   // Profile actions
   const updateProfile = async (info) => {
     const res = await terminalClient.updateProfile(info);
-    setProfile(res.data || res);
     return res;
   };
 
@@ -108,6 +128,13 @@ export function ShopProvider({ children }) {
     setServerCart(c => ({ ...c, cardID: id }));
   };
 
+  // Card CRUD actions
+  const addCard = async (cardInfo) => {
+    const res = await terminalClient.createCard(cardInfo);
+    setCards(prev => [...prev, res.data || res]);
+    return res;
+  };
+
   // Orders
   const refreshOrders = async () => {
     const res = await terminalClient.listOrders();
@@ -115,22 +142,52 @@ export function ShopProvider({ children }) {
     return res;
   };
 
+  // Subscription actions
+  const cancelSubscription = async (id) => {
+    await terminalClient.cancelSubscription(id);
+    setSubscriptions(prev => prev.filter(s => s.id !== id));
+  };
+
+  const addSubscription = async (variantId, quantity = 1) => {
+    const res = await terminalClient.createSubscription(variantId, quantity);
+    setSubscriptions(prev => [...prev, res.data || res]);
+    return res;
+  };
+
+  // Token actions
+  const addToken = async (name) => {
+    const res = await terminalClient.createToken(name);
+    setTokens(prev => [...prev, res.data || res]);
+    return res;
+  };
+
+  const removeToken = async (id) => {
+    await terminalClient.deleteToken(id);
+    setTokens(prev => prev.filter(t => t.id !== id));
+  };
+
   return (
     <ShopContext.Provider
       value={{
         products,
-        profile,
+        updateProfile,
         serverCart,
         localCart,
         updateLocalCartItem,
         clearLocalCart,
         finalizeCart,
-        updateProfile,
+        tokens,
+        addToken,
+        removeToken,
+        subscriptions,
+        addSubscription,
+        cancelSubscription,
         addresses,
         addAddress,
         removeAddress,
         setShippingAddress,
         cards,
+        addCard,
         setPaymentCard,
         orders,
         refreshOrders,

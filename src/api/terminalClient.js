@@ -1,19 +1,22 @@
 // src/api/terminalClient.js
 const BASE_URL = import.meta.env.VITE_TERMINAL_BASE_URL;
+// Personal Access Token: use per-user token or env fallback
+const USER_TOKEN_KEY = 'terminalShopUserToken';
 const TOKEN = import.meta.env.VITE_TERMINAL_BEARER_TOKEN;
 
 async function request(path, options = {}) {
+  const userToken = localStorage.getItem(USER_TOKEN_KEY) || TOKEN;
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${TOKEN}`,
+      Authorization: `Bearer ${userToken}`,
     },
     ...options,
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     if (res.status === 401) {
-      throw new Error('401 Unauthorized: Invalid personal access token. Verify VITE_TERMINAL_BEARER_TOKEN');
+      throw new Error('401 Unauthorized: Invalid personal access token. Verify your PAT');
     }
     throw new Error(body.message || `API error: ${res.status}`);
   }
@@ -32,10 +35,18 @@ export const terminalClient = {
   createSubscription: (variantId, quantity = 1) =>
     request('/subscription', {
       method: 'POST',
-      body: JSON.stringify({ variants: { [variantId]: quantity } }),
+      body: JSON.stringify({ productVariantID: variantId, quantity }),
     }),
   // composite initialization endpoint
   viewInit: () => request('/view/init'),
+  // subscriptions
+  listSubscriptions: () => request('/subscription'),
+  cancelSubscription: (id) => request(`/subscription/${id}`, { method: 'DELETE' }),
+  
+  // tokens
+  listTokens: () => request('/token'),
+  createToken: (name) => request('/token', { method: 'POST', body: JSON.stringify({ name }) }),
+  deleteToken: (id) => request(`/token/${id}`, { method: 'DELETE' }),
   // user profile
   getProfile: () => request('/profile'),
   updateProfile: (data) => request('/profile', { method: 'PUT', body: JSON.stringify(data) }),
@@ -51,4 +62,8 @@ export const terminalClient = {
   // orders
   listOrders: () => request('/order'),
   getOrder: (id) => request(`/order/${id}`),
+  // payment cards
+  listCards: () => request('/card'),
+  createCard: (card) => request('/card', { method: 'POST', body: JSON.stringify(card) }),
+  deleteCard: (id) => request(`/card/${id}`, { method: 'DELETE' }),
 };
