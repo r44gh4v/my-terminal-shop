@@ -52,24 +52,51 @@ function Cart() {
   const handleClear = () => clearLocalCart();
   const handleStartCheckout = () => setStep(1);
   const handleNextAddress = async () => {
+    let addressIdToUse = selectedAddress;
+
     if (addingAddress) {
-      // submit new address
-      const addr = await addAddress({
-        name: newAddress.name,
-        street1: newAddress.street1,
-        street2: newAddress.street2,
-        city: newAddress.city,
-        state: newAddress.state,
-        country: newAddress.country,
-        phone: newAddress.phone,
-        postalCode: newAddress.postalCode
-      });
-      setSelectedAddress(addr.data.id || addr.id);
-      setAddingAddress(false);
+      try {
+        const newAddressData = {
+          name: newAddress.name,
+          street1: newAddress.street1,
+          street2: newAddress.street2,
+          city: newAddress.city,
+          state: newAddress.state,
+          country: newAddress.country,
+          phone: newAddress.phone,
+          postalCode: newAddress.postalCode
+        };
+
+        // addAddress now returns the actual address object on success
+        const addedAddress = await addAddress(newAddressData);
+
+        // Check if we got a valid address object back
+        if (addedAddress && addedAddress.id) {
+          addressIdToUse = addedAddress.id;
+          setSelectedAddress(addressIdToUse); // Select the new address
+          setNewAddress({ name: '', street1: '', street2: '', city: '', state: '', country: '', phone: '', postalCode: '' });
+          setAddingAddress(false); // Close the form
+        } else {
+          // This case should ideally not happen if addAddress throws an error on failure
+          console.error("Failed to add address.");
+          return; // Stop processing
+        }
+      } catch (error) {
+        console.error("Error adding address:", error);
+        // Optionally: Show an error message to the user
+        return; // Stop processing on error
+      }
     }
-    if (selectedAddress) {
-      await setShippingAddress(selectedAddress);
-      setStep(2);
+
+    if (addressIdToUse) {
+      try {
+        await setShippingAddress(addressIdToUse);
+        setStep(2);
+      } catch (error) {
+        console.error("Error setting shipping address:", error);
+      }
+    } else {
+      console.warn("Please select or add a shipping address.");
     }
   };
   const handlePrevAddress = () => setStep(0);
@@ -149,14 +176,17 @@ function Cart() {
               <h3 className="text-xl mb-2">Saved Addresses</h3>
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {addresses.map(a => (
-                  <li key={a.id} className="border border-[#FF5C00] p-3 cursor-pointer">
+                  <li key={a.id} className={`border p-3 cursor-pointer ${selectedAddress === a.id ? 'border-[#FF5C00] shadow-[0_0_10px_#FF5C00]' : 'border-[#FF5C00]'}`}>
                     <input
                       type="radio"
                       id={`address-${a.id}`}
                       name="address"
                       value={a.id}
                       checked={selectedAddress === a.id}
-                      onChange={e => setSelectedAddress(e.target.value)}
+                      onChange={e => {
+                        setSelectedAddress(e.target.value);
+                        setAddingAddress(false); // Hide add form if selecting existing
+                      }}
                       className="mr-2"
                     />
                     <label htmlFor={`address-${a.id}`} className="cursor-pointer">
@@ -174,9 +204,12 @@ function Cart() {
             <div className="border border-[#FF5C00] p-4 mb-4">
               <h3 className="text-xl mb-4">New Address</h3>
               {/* Grid layout with sm breakpoint */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3"> {/* Changed md to sm */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                 {/* Row 1: Full Name | Phone Number */}
                 <input
+                  type="text"
+                  id="address-name"
+                  name="fullName"
                   placeholder="Full Name *"
                   value={newAddress.name}
                   onChange={e => setNewAddress({ ...newAddress, name: e.target.value })}
@@ -184,6 +217,9 @@ function Cart() {
                   required
                 />
                 <input
+                  type="tel"
+                  id="address-phone"
+                  name="phoneNumber"
                   placeholder="Phone Number"
                   value={newAddress.phone}
                   onChange={e => setNewAddress({ ...newAddress, phone: e.target.value })}
@@ -192,23 +228,32 @@ function Cart() {
 
                 {/* Row 2: Street Address 1 (Full Width) */}
                 <input
+                  type="text"
+                  id="address-street1"
+                  name="street1"
                   placeholder="Street Address 1 *"
                   value={newAddress.street1}
                   onChange={e => setNewAddress({ ...newAddress, street1: e.target.value })}
-                  className="w-full p-2 border bg-transparent text-white sm:col-span-2" /* Changed md to sm */
+                  className="w-full p-2 border bg-transparent text-white sm:col-span-2"
                   required
                 />
 
                 {/* Row 3: Street Address 2 (Full Width) */}
                 <input
+                  type="text"
+                  id="address-street2"
+                  name="street2"
                   placeholder="Street Address 2 (optional)"
                   value={newAddress.street2}
                   onChange={e => setNewAddress({ ...newAddress, street2: e.target.value })}
-                  className="w-full p-2 border bg-transparent text-white sm:col-span-2" /* Changed md to sm */
+                  className="w-full p-2 border bg-transparent text-white sm:col-span-2"
                 />
 
                 {/* Row 4: City | State/Province */}
                 <input
+                  type="text"
+                  id="address-city"
+                  name="city"
                   placeholder="City *"
                   value={newAddress.city}
                   onChange={e => setNewAddress({ ...newAddress, city: e.target.value })}
@@ -216,6 +261,9 @@ function Cart() {
                   required
                 />
                 <input
+                  type="text"
+                  id="address-state"
+                  name="state"
                   placeholder="State/Province *"
                   value={newAddress.state}
                   onChange={e => setNewAddress({ ...newAddress, state: e.target.value })}
@@ -225,6 +273,9 @@ function Cart() {
 
                 {/* Row 5: Postal Code | Country */}
                 <input
+                  type="text"
+                  id="address-postalCode"
+                  name="postalCode"
                   placeholder="Postal Code *"
                   value={newAddress.postalCode}
                   onChange={e => setNewAddress({ ...newAddress, postalCode: e.target.value })}
@@ -232,7 +283,10 @@ function Cart() {
                   required
                 />
                 <input
-                  placeholder="Country *"
+                  type="text"
+                  id="address-country"
+                  name="country"
+                  placeholder="Country Code (US, IN, etc.) *"
                   value={newAddress.country}
                   onChange={e => setNewAddress({ ...newAddress, country: e.target.value })}
                   className="w-full p-2 border bg-transparent text-white"

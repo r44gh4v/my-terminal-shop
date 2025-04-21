@@ -155,9 +155,28 @@ export function ShopProvider({ children }) {
 
   // Address actions
   const addAddress = async (addr) => {
-    const res = await terminalClient.createAddress(addr);
-    setAddresses(prev => [...prev, res.data || res]);
-    return res;
+    // Map frontend state to API expected fields
+    const apiAddress = {
+      name: addr.name,
+      street1: addr.street1,
+      street2: addr.street2,
+      city: addr.city,
+      state: addr.state,
+      country: addr.country,
+      phone: addr.phone,
+      zip: addr.postalCode // Renamed postalCode to zip
+    };
+    const res = await terminalClient.createAddress(apiAddress);
+    const newAddressData = res.data || res; // Extract the actual address object
+    // Ensure we have a valid address object before updating state
+    if (newAddressData && typeof newAddressData === 'object' && newAddressData.id) {
+        setAddresses(prev => [...prev, newAddressData]);
+        return newAddressData; // Return the extracted address object
+    } else {
+        console.error("Invalid address data received from API:", res);
+        // Handle error appropriately, maybe throw or return null
+        throw new Error("Failed to create address or invalid data received.");
+    }
   };
 
   const removeAddress = async (id) => {
