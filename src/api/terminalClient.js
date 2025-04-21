@@ -53,15 +53,35 @@ export const terminalClient = {
   getAddress: (id) => request(`/address/${id}`),
   createAddress: (address) => request('/address', { method: 'POST', body: JSON.stringify(address) }),
   deleteAddress: (addressId) => request(`/address/${addressId}`, { method: 'DELETE' }),
-  // set cart shipping address
-  setCartAddress: (addressId) => request('/cart/address', { method: 'PUT', body: JSON.stringify({ addressID: addressId }) }),
-  // set cart payment card
-  setCartCard: (cardId) => request('/cart/setCard', { method: 'PUT', body: JSON.stringify({ cardID: cardId }) }),
+  // set cart shipping address - Fix sending addressID
+  setCartAddress: (addressId) => {
+    console.log('Setting address ID:', addressId);
+    // Try string format since the ID might need to be a string
+    return request('/cart/address', { 
+      method: 'PUT', 
+      body: JSON.stringify({ addressID: String(addressId) }) 
+    });
+  },
+  // set cart payment card - Fix endpoint URL
+  setCartCard: (cardId) => {
+    console.log('Setting card ID:', cardId);
+    return request('/cart/card', { 
+      method: 'PUT', 
+      body: JSON.stringify({ cardID: cardId }) 
+    });
+  },
   // orders
   listOrders: () => request('/order'),
   getOrder: (id) => request(`/order/${id}`),
   // payment cards
   listCards: () => request('/card'),
-  createCard: (card) => request('/card', { method: 'POST', body: JSON.stringify(card) }),
+  createCard: (card) => {
+    // Add a default token for development purposes
+    const cardWithToken = {
+      ...card,
+      token: 'tok_visa' // Use Stripe's test token
+    };
+    return request('/card', { method: 'POST', body: JSON.stringify(cardWithToken) });
+  },
   deleteCard: (id) => request(`/card/${id}`, { method: 'DELETE' }),
 };
