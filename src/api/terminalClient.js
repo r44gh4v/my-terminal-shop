@@ -1,15 +1,13 @@
 // src/api/terminalClient.js
 const BASE_URL = import.meta.env.VITE_TERMINAL_BASE_URL;
-// Personal Access Token: use per-user token or env fallback
-const USER_TOKEN_KEY = 'terminalShopUserToken';
+// Always use environment token
 const TOKEN = import.meta.env.VITE_TERMINAL_BEARER_TOKEN;
 
 async function request(path, options = {}) {
-  const userToken = localStorage.getItem(USER_TOKEN_KEY) || TOKEN;
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${userToken}`,
+      Authorization: `Bearer ${TOKEN}`,
     },
     ...options,
   });

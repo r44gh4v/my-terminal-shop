@@ -10,8 +10,21 @@ function Shop() {
     console.log('products list:', products);
   }, [products]);
 
-  const featured = useMemo(() => products.filter(p => p.tags?.featured), [products]);
-  const originals = useMemo(() => products.filter(p => !p.tags?.featured), [products]);
+  // Filter out products that require subscription
+  const filteredProducts = useMemo(() => 
+    products.filter(p => p.subscription !== 'required'), 
+    [products]
+  );
+
+  const featured = useMemo(() => 
+    filteredProducts.filter(p => p.tags?.featured), 
+    [filteredProducts]
+  );
+  
+  const originals = useMemo(() => 
+    filteredProducts.filter(p => !p.tags?.featured), 
+    [filteredProducts]
+  );
 
   if (loading) return <div className='text-5xl animate-pulse'>Loading...</div>;
   if (error) return <div>{error}</div>;
@@ -54,7 +67,7 @@ function Shop() {
                   quantity={qty}
                   onPlus={q => updateLocalCartItem(vid, q)}
                   onMinus={q => updateLocalCartItem(vid, q)}
-                  subscriptionRequired={product.subscription === 'required'}
+                  subscriptionRequired={false}
                   subscriptionActive={isActive}
                   onSubscribe={() => handleSubscribe(vid)}
                   onUnsubscribe={() => sub && handleUnsubscribe(sub.id, vid)}
@@ -84,7 +97,7 @@ function Shop() {
                   quantity={qty}
                   onPlus={q => updateLocalCartItem(vid, q)}
                   onMinus={q => updateLocalCartItem(vid, q)}
-                  subscriptionRequired={product.subscription === 'required'}
+                  subscriptionRequired={false}
                   subscriptionActive={isActive}
                   onSubscribe={() => handleSubscribe(vid)}
                   onUnsubscribe={() => sub && handleUnsubscribe(sub.id, vid)}

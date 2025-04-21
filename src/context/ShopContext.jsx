@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { terminalClient } from '../api/terminalClient';
 
 const ShopContext = createContext();
-const USER_TOKEN_KEY = 'terminalShopUserToken';
+const LOCAL_CART_KEY = 'terminalShopLocalCart';
 
 export function ShopProvider({ children }) {
   const [products, setProducts] = useState([]);
@@ -15,35 +15,65 @@ export function ShopProvider({ children }) {
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // no manual import needed; silent PAT generation for new users
+  
+  // Flag to track if localStorage was loaded
+  const localStorageLoaded = useRef(false);
 
-  // Fetch initial data on mount
+  // Load cart from localStorage FIRST, before any API calls
+  useEffect(() => {
+    try {
+      const savedCart = localStorage.getItem(LOCAL_CART_KEY);
+      if (savedCart) {
+        const parsedCart = JSON.parse(savedCart);
+        if (parsedCart && typeof parsedCart === 'object') {
+          setLocalCart(parsedCart);
+          console.log('Loaded cart from localStorage:', parsedCart);
+          localStorageLoaded.current = true;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to parse saved cart:', err);
+      localStorage.removeItem(LOCAL_CART_KEY);
+    }
+  }, []);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    // Only save to localStorage if we're not in the initial loading phase
+    if (localStorageLoaded.current || Object.keys(localCart).length > 0) {
+      console.log('Saving cart to localStorage:', localCart);
+      localStorage.setItem(LOCAL_CART_KEY, JSON.stringify(localCart));
+    }
+  }, [localCart]);
+
+  // Fetch initial data on mount - after localStorage is checked
   useEffect(() => {
     async function init() {
       try {
-        // silent PAT generation for new users
-        const stored = localStorage.getItem(USER_TOKEN_KEY);
-        if (!stored) {
-          const createRes = await terminalClient.createToken(`auto-${Date.now()}`);
-          const newToken = createRes.data || createRes;
-          const secret = newToken.token || newToken.value;
-          if (secret) localStorage.setItem(USER_TOKEN_KEY, secret);
-        }
-        // fetch initial app data now that PAT exists
+        // fetch initial app data
         const res = await terminalClient.viewInit();
         const data = res.data || res;
         setProducts(data.products);
         setServerCart(data.cart);
-        const initCart = {};
-        (data.cart.items || []).forEach(item => {
-          initCart[item.productVariantID || item.id] = item.quantity;
-        });
-        setLocalCart(initCart);
+        
+        // Only initialize the cart from server if localStorage was empty
+        // and we didn't already load from localStorage
+        if (Object.keys(localCart).length === 0 && !localStorageLoaded.current) {
+          const initCart = {};
+          (data.cart.items || []).forEach(item => {
+            initCart[item.productVariantID || item.id] = item.quantity;
+          });
+          if (Object.keys(initCart).length > 0) {
+            setLocalCart(initCart);
+          }
+        }
+        
         setAddresses(data.addresses || []);
         setCards(data.cards || []);
         setOrders(data.orders || []);
         setSubscriptions(data.subscriptions || []);
-        // fetch tokens for management
+        
+        // Only fetch tokens for reference, but don't expose them in UI
         const tk = await terminalClient.listTokens();
         const tokenList = Array.isArray(tk.data) ? tk.data : Array.isArray(tk) ? tk : [];
         setTokens(tokenList);
@@ -58,13 +88,21 @@ export function ShopProvider({ children }) {
 
   // Update localCart quantity only
   const updateLocalCartItem = (variantId, quantity) => {
-    setLocalCart(lc => ({ ...lc, [variantId]: quantity }));
-    console.log('localCart updated', { variantId, quantity });
+    setLocalCart(lc => {
+      const updatedCart = { ...lc, [variantId]: quantity };
+      // Remove items with quantity 0
+      if (quantity === 0) {
+        delete updatedCart[variantId];
+      }
+      return updatedCart;
+    });
   };
 
   // clear local cart
   const clearLocalCart = () => {
     setLocalCart({});
+    // Also clear from localStorage
+    localStorage.removeItem(LOCAL_CART_KEY);
   };
 
   // synchronize localCart to server and finalize (checkout)
@@ -81,18 +119,28 @@ export function ShopProvider({ children }) {
       console.log('finalizeCart response', res);
       // reset both carts
       setLocalCart({});
+      // Clear localStorage too
+      localStorage.removeItem(LOCAL_CART_KEY);
       setServerCart({ items: [] });
+      
+      // Refresh orders after successful checkout
+      refreshOrders();
+      
+      return res;
     } catch (err) {
       console.error('finalizeCart error', err);
+      throw err;
     }
   };
 
+  // Clear server cart
   const clearServerCart = async () => {
     const res = await terminalClient.clearCart();
     setServerCart({ items: [] });
     console.log('serverCart cleared:', res);
   };
 
+  // Convert server cart
   const convertServerCart = async () => {
     const res = await terminalClient.convertCart();
     setServerCart({ items: [] });
@@ -154,18 +202,6 @@ export function ShopProvider({ children }) {
     return res;
   };
 
-  // Token actions
-  const addToken = async (name) => {
-    const res = await terminalClient.createToken(name);
-    setTokens(prev => [...prev, res.data || res]);
-    return res;
-  };
-
-  const removeToken = async (id) => {
-    await terminalClient.deleteToken(id);
-    setTokens(prev => prev.filter(t => t.id !== id));
-  };
-
   return (
     <ShopContext.Provider
       value={{
@@ -177,8 +213,6 @@ export function ShopProvider({ children }) {
         clearLocalCart,
         finalizeCart,
         tokens,
-        addToken,
-        removeToken,
         subscriptions,
         addSubscription,
         cancelSubscription,
