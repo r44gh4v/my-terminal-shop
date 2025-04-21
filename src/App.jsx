@@ -12,7 +12,7 @@ function AppContent() {
   const [showSplash, setShowSplash] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const DEV_SHOW_SPLASH = false;
+  const DEV_SHOW_SPLASH = true;
 
   useEffect(() => {
     if (needsToken && location.pathname !== '/account') {
